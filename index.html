@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>海外媒资后台 - 媒资查询</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif; font-size: 13px; color: #333; background: #f5f6f8; min-height: 100vh; display: flex; }
+
+  /* Sidebar */
+  .sidebar { width: 180px; background: #1a2035; min-height: 100vh; flex-shrink: 0; }
+  .sidebar-logo { padding: 16px 16px 12px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .sidebar-logo-icon { width: 28px; height: 28px; background: #3b7bff; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 500; color: #fff; }
+  .sidebar-logo-text { font-size: 14px; font-weight: 500; color: #fff; }
+  .sidebar-nav { padding: 8px 0; }
+  .nav-item { display: flex; align-items: center; gap: 8px; padding: 9px 16px; color: rgba(255,255,255,0.65); font-size: 13px; cursor: pointer; transition: background 0.15s; }
+  .nav-item:hover { background: rgba(255,255,255,0.06); }
+  .nav-item.active { background: #3b7bff; color: #fff; }
+  .nav-item.sub { padding-left: 32px; font-size: 12px; }
+  .nav-item.sub.active { background: rgba(59,123,255,0.18); color: #6fa3ff; }
+  .nav-group-label { padding: 16px 16px 4px; font-size: 11px; color: rgba(255,255,255,0.35); letter-spacing: 0.5px; }
+  .nav-arrow { margin-left: auto; font-size: 10px; }
+  .nav-icon { width: 16px; text-align: center; }
+
+  /* Main */
+  .main { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+  .topbar { height: 48px; background: #fff; border-bottom: 1px solid #e8eaed; display: flex; align-items: center; padding: 0 20px; gap: 8px; flex-shrink: 0; }
+  .breadcrumb { font-size: 13px; color: #999; display: flex; align-items: center; gap: 6px; }
+  .breadcrumb-sep { color: #ccc; }
+  .breadcrumb-current { color: #333; }
+  .user-info { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .user-avatar { width: 28px; height: 28px; border-radius: 50%; background: #e8f0fe; display: flex; align-items: center; justify-content: center; font-size: 12px; color: #3b7bff; font-weight: 500; }
+
+  /* Content */
+  .content { flex: 1; padding: 16px 20px; overflow: auto; }
+
+  /* Filter Panel */
+  .filter-panel { background: #fff; border-radius: 8px; padding: 16px 20px 12px; margin-bottom: 12px; border: 1px solid #eaecf0; }
+  .filter-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px 16px; margin-bottom: 10px; }
+  .filter-item { display: flex; align-items: center; gap: 6px; }
+  .filter-label { font-size: 12px; color: #666; white-space: nowrap; flex-shrink: 0; }
+  .filter-input { flex: 1; height: 30px; border: 1px solid #d9dde4; border-radius: 4px; padding: 0 8px; font-size: 12px; color: #333; outline: none; }
+  .filter-input:focus { border-color: #3b7bff; }
+  .filter-select { flex: 1; height: 30px; border: 1px solid #d9dde4; border-radius: 4px; padding: 0 6px; font-size: 12px; color: #666; outline: none; background: #fff; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23999'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 7px center; padding-right: 22px; }
+  .filter-tag { background: #e8f0fe; color: #3b7bff; border-radius: 3px; padding: 0 6px; font-size: 11px; display: inline-flex; align-items: center; gap: 4px; height: 20px; }
+  .filter-tag-x { cursor: pointer; font-size: 12px; line-height: 1; }
+  .filter-actions { display: flex; align-items: center; gap: 8px; padding-top: 4px; }
+  .btn { height: 30px; padding: 0 16px; border-radius: 4px; font-size: 13px; cursor: pointer; border: none; display: inline-flex; align-items: center; gap: 5px; font-weight: 400; }
+  .btn-primary { background: #3b7bff; color: #fff; }
+  .btn-primary:hover { background: #2d6be0; }
+  .btn-default { background: #fff; color: #333; border: 1px solid #d9dde4; }
+  .btn-default:hover { border-color: #3b7bff; color: #3b7bff; }
+  .btn-outline-primary { background: #fff; color: #3b7bff; border: 1px solid #3b7bff; }
+  .btn-outline-primary:hover { background: #f0f5ff; }
+
+  /* Toolbar */
+  .toolbar { background: #fff; border-radius: 8px 8px 0 0; padding: 10px 16px; border: 1px solid #eaecf0; border-bottom: none; display: flex; align-items: center; gap: 8px; }
+  .toolbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .lang-select-wrap { display: flex; align-items: center; gap: 4px; }
+  .lang-select { height: 30px; border: 1px solid #d9dde4; border-radius: 4px; padding: 0 6px; font-size: 12px; color: #666; outline: none; background: #fff; min-width: 140px; }
+  .btn-create { height: 30px; padding: 0 14px; background: #3b7bff; color: #fff; border-radius: 4px; font-size: 13px; cursor: pointer; border: none; }
+  .btn-batch { height: 30px; padding: 0 14px; background: #fff; color: #333; border: 1px solid #d9dde4; border-radius: 4px; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; }
+
+  /* Export button */
+  .btn-export { height: 30px; padding: 0 16px; background: #fff; color: #1677ff; border: 1.5px solid #1677ff; border-radius: 4px; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; font-weight: 400; }
+  .btn-export:hover { background: #f0f5ff; }
+
+  /* Table */
+  .table-wrap { background: #fff; border-radius: 0 0 8px 8px; border: 1px solid #eaecf0; overflow: auto; }
+  table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+  thead th { background: #f8f9fb; font-size: 12px; font-weight: 500; color: #666; padding: 10px 12px; text-align: left; border-bottom: 1px solid #eaecf0; white-space: nowrap; }
+  tbody td { font-size: 12px; color: #333; padding: 10px 12px; border-bottom: 1px solid #f0f2f5; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover td { background: #f8fbff; }
+  .col-check { width: 36px; }
+  .col-id { width: 240px; }
+  .col-cp { width: 90px; }
+  .col-country { width: 200px; }
+  .col-title { width: 200px; }
+  .col-play { width: 80px; }
+  .col-status { width: 70px; }
+  .col-op { width: 60px; }
+  .id-cell { font-size: 11px; color: #555; font-family: monospace; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .country-cell { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #666; }
+  .status-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 11px; }
+  .status-dot { width: 6px; height: 6px; border-radius: 50%; background: #52c41a; }
+  .link-btn { color: #3b7bff; cursor: pointer; font-size: 12px; border: none; background: none; padding: 0; }
+  .link-btn:hover { color: #2d6be0; text-decoration: underline; }
+  .check-box { width: 14px; height: 14px; cursor: pointer; }
+  .pagination { display: flex; align-items: center; justify-content: flex-end; padding: 12px 16px; background: #fff; border-top: 1px solid #f0f2f5; gap: 6px; }
+  .page-info { font-size: 12px; color: #999; margin-right: 8px; }
+  .page-btn { height: 26px; min-width: 26px; padding: 0 6px; border: 1px solid #d9dde4; border-radius: 3px; background: #fff; font-size: 12px; cursor: pointer; color: #333; }
+  .page-btn.active { background: #3b7bff; color: #fff; border-color: #3b7bff; }
+  .page-btn:hover:not(.active) { border-color: #3b7bff; color: #3b7bff; }
+
+  /* Modal Overlay */
+  .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+  .modal-overlay.hidden { display: none; }
+  .modal { background: #fff; border-radius: 8px; width: 680px; max-height: 88vh; overflow: auto; box-shadow: 0 8px 32px rgba(0,0,0,0.16); }
+  .modal-header { display: flex; align-items: center; justify-content: space-between; padding: 16px 20px 12px; border-bottom: 1px solid #f0f2f5; }
+  .modal-title { font-size: 15px; font-weight: 500; color: #1a1a1a; }
+  .modal-close { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: #999; font-size: 18px; border-radius: 4px; border: none; background: none; }
+  .modal-close:hover { background: #f5f5f5; color: #333; }
+  .modal-body { padding: 20px; }
+  .modal-footer { padding: 12px 20px; border-top: 1px solid #f0f2f5; display: flex; justify-content: flex-end; gap: 8px; position: sticky; bottom: 0; background: #fff; z-index: 2; }
+  .modal-footer .btn { height: 32px; padding: 0 20px; }
+
+  /* Export Modal */
+  .section-title { font-size: 13px; font-weight: 500; color: #1a1a1a; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid #f0f2f5; }
+  .form-row { display: flex; align-items: flex-start; gap: 0; margin-bottom: 16px; }
+  .form-label { font-size: 13px; color: #333; min-width: 88px; flex-shrink: 0; padding-top: 5px; }
+  .form-label.required::before { content: "* "; color: #e24b4a; }
+  .form-control { flex: 1; }
+
+  /* Radio group (导出版本) */
+  .radio-group { display: inline-flex; align-items: center; gap: 22px; min-height: 30px; }
+  .radio-item { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; }
+  .radio-item input[type=radio] { width: 14px; height: 14px; margin: 0; cursor: pointer; accent-color: #3b7bff; }
+  .radio-item label { font-size: 13px; color: #333; cursor: pointer; }
+  .version-hint { font-size: 11px; color: #999; margin-top: 4px; }
+
+  /* Tab group */
+  .tab-group { display: inline-flex; border: 1px solid #3b7bff; border-radius: 4px; overflow: hidden; }
+  .tab-btn { padding: 5px 18px; font-size: 13px; cursor: pointer; border: none; background: #fff; color: #3b7bff; transition: background 0.15s; }
+  .tab-btn.active { background: #3b7bff; color: #fff; }
+
+  /* Upload area */
+  .upload-row { display: flex; align-items: center; gap: 8px; }
+  .btn-upload { height: 30px; padding: 0 14px; background: #3b7bff; color: #fff; border-radius: 4px; font-size: 13px; cursor: pointer; border: none; }
+  .btn-download-tpl { height: 30px; padding: 0 14px; background: #fff; color: #333; border: 1px solid #d9dde4; border-radius: 4px; font-size: 13px; cursor: pointer; }
+  .btn-download-tpl:hover { border-color: #3b7bff; color: #3b7bff; }
+  .upload-hint { font-size: 11px; color: #999; margin-top: 5px; }
+  .uploaded-file { display: inline-flex; align-items: center; gap: 5px; background: #f0f7ff; border: 1px solid #b5d4f4; border-radius: 4px; padding: 2px 8px; font-size: 12px; color: #3b7bff; margin-top: 5px; }
+  .uploaded-file.hidden { display: none; }
+  .uploaded-file-x { cursor: pointer; color: #999; margin-left: 4px; }
+
+  /* Source select */
+  .source-select { width: 100%; height: 32px; border: 1px solid #d9dde4; border-radius: 4px; padding: 0 8px; font-size: 13px; color: #333; outline: none; background: #fff; }
+  .source-select:focus { border-color: #3b7bff; }
+
+  /* Checkbox grid */
+  .checkbox-block { border: 1px solid #eaecf0; border-radius: 6px; padding: 12px 14px; background: #fafbfc; }
+  .checkbox-all-row { display: flex; align-items: center; gap: 6px; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 1px solid #eaecf0; }
+  .checkbox-all-row .field-count { margin-left: auto; font-size: 12px; color: #999; font-weight: 400; }
+  .checkbox-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px 0; }
+  .checkbox-grid.version-en { grid-template-columns: repeat(3, 1fr); max-height: 360px; overflow-y: auto; padding-right: 4px; }
+  .checkbox-item { display: flex; align-items: center; gap: 5px; cursor: pointer; min-width: 0; }
+  .checkbox-item input[type=checkbox] { width: 14px; height: 14px; cursor: pointer; accent-color: #3b7bff; flex-shrink: 0; }
+  .checkbox-item label { font-size: 12px; color: #333; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+  .checkbox-all-row input[type=checkbox] { width: 14px; height: 14px; cursor: pointer; accent-color: #3b7bff; }
+  .checkbox-all-row label { font-size: 13px; color: #333; cursor: pointer; font-weight: 500; }
+
+  /* Info sub-section divider */
+  .sub-section { margin-bottom: 12px; }
+  .sub-section-label { font-size: 12px; color: #3b7bff; font-weight: 500; margin-bottom: 6px; }
+
+  /* Tabs in modal */
+  .modal-tab-bar { display: flex; border-bottom: 2px solid #f0f2f5; margin-bottom: 16px; gap: 0; }
+  .modal-tab { padding: 6px 16px 8px; font-size: 13px; cursor: pointer; color: #666; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+  .modal-tab.active { color: #3b7bff; border-bottom-color: #3b7bff; font-weight: 500; }
+
+  /* Divider line */
+  .divider { border: none; border-top: 1px solid #f0f2f5; margin: 14px 0; }
+
+  .count-hint { font-size: 11px; color: #999; margin-top: 4px; }
+  .count-input { width: 100px; height: 30px; border: 1px solid #d9dde4; border-radius: 4px; padding: 0 8px; font-size: 13px; color: #333; outline: none; }
+  .count-input:focus { border-color: #3b7bff; }
+  .count-input:disabled { background: #f5f5f5; color: #999; cursor: not-allowed; border-color: #e5e5e5; }
+  .select-wrapper { position: relative; display: inline-block; width: 100%; }
+  .inline-tag { display: inline-flex; align-items: center; gap: 3px; background: #e8f0fe; color: #3b7bff; border-radius: 3px; padding: 1px 5px; font-size: 11px; margin-right: 3px; }
+</style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="sidebar-logo-icon">A</div>
+    <span class="sidebar-logo-text">海外媒资</span>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-item">
+      <span class="nav-icon">&#9783;</span> Dashboard
+    </div>
+    <div class="nav-item" style="justify-content: space-between;">
+      <span style="display:flex;align-items:center;gap:8px;"><span class="nav-icon">&#9783;</span> 推荐管理</span>
+      <span class="nav-arrow">&#8250;</span>
+    </div>
+    <div class="nav-item" style="justify-content: space-between; color: rgba(255,255,255,0.9);">
+      <span style="display:flex;align-items:center;gap:8px;"><span class="nav-icon">&#9783;</span> 媒资管理</span>
+      <span class="nav-arrow">&#8964;</span>
+    </div>
+    <div class="nav-item sub" style="color:rgba(255,255,255,0.55);">
+      <span class="nav-icon">&#9670;</span> 演员库
+    </div>
+    <div class="nav-item sub" style="color:rgba(255,255,255,0.55);">
+      <span class="nav-icon">&#9670;</span> 媒资库
+    </div>
+    <div class="nav-item sub active">
+      <span class="nav-icon">&#9670;</span> 媒资查询
+    </div>
+    <div class="nav-item sub" style="color:rgba(255,255,255,0.55);">
+      <span class="nav-icon">&#9670;</span> 字幕管理
+    </div>
+    <div class="nav-item sub" style="color:rgba(255,255,255,0.55);">
+      <span class="nav-icon">&#9670;</span> 制图管理
+    </div>
+    <div class="nav-item" style="justify-content: space-between;">
+      <span style="display:flex;align-items:center;gap:8px;"><span class="nav-icon">&#9783;</span> 标签管理</span>
+      <span class="nav-arrow">&#8250;</span>
+    </div>
+    <div class="nav-item" style="justify-content: space-between;">
+      <span style="display:flex;align-items:center;gap:8px;"><span class="nav-icon">&#9783;</span> Feed管理</span>
+      <span class="nav-arrow">&#8250;</span>
+    </div>
+    <div class="nav-item">
+      <span class="nav-icon">&#9783;</span> 搜索管理
+    </div>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="breadcrumb">
+      <span>首页</span>
+      <span class="breadcrumb-sep">/</span>
+      <span>媒资管理</span>
+      <span class="breadcrumb-sep">/</span>
+      <span class="breadcrumb-current">媒资查询</span>
+    </div>
+    <div class="user-info">
+      <div class="user-avatar">管</div>
+    </div>
+  </div>
+
+  <!-- Content -->
+  <div class="content">
+    <!-- Filter Panel -->
+    <div class="filter-panel">
+      <div class="filter-grid">
+        <div class="filter-item">
+          <span class="filter-label">媒资标题：</span>
+          <select class="filter-select"><option value="">请选择</option></select>
+        </div>
+        <div class="filter-item">
+          <span class="filter-label">媒资ID：</span>
+          <input class="filter-input" type="text" placeholder="请输入MediaID，最多20条">
+        </div>
+        <div class="filter-item">
+          <span class="filter-label">内容商：</span>
+          <div style="flex:1; display:flex; align-items:center; gap:4px; border:1px solid #d9dde4; border-radius:4px; padding:0 6px; height:30px; background:#fff;">
+            <span class="inline-tag">A2 Filmes <span style="cursor:pointer;color:#999;margin-left:2px;">×</span></span>
+            <span style="font-size:12px; color:#ccc;">|</span>
+          </div>
+        </div>
+        <div class="filter-item">
+          <span class="filter-label">可用国家：</span>
+          <select class="filter-select"><option value="">请选择覆盖国家</option></select>
+        </div>
+        <div class="filter-item">
+          <span class="filter-label">播放形式：</span>
+          <select class="filter-select"><option value="">请选择</option></select>
+        </div>
+        <div class="filter-item">
+          <span class="filter-label">媒资状态：</span>
+          <select class="filter-select"><option value="">请选择</option></select>
+        </div>
+        <div class="filter-item">
+          <span class="filter-label">分类：</span>
+          <select class="filter-select"><option value="">请选择</option></select>
+        </div>
+        <div class="filter-item">
+          <span class="filter-label">类型：</span>
+          <select class="filter-select"><option value="">请选择类型</option></select>
+        </div>
+        <div class="filter-item">
+          <span class="filter-label">语言：</span>
+          <select class="filter-select"><option value="">请选择</option></select>
+        </div>
+        <div class="filter-item">
+          <span class="filter-label">字幕语言：</span>
+          <select class="filter-select"><option value="">请选择</option></select>
+        </div>
+        <div class="filter-item">
+          <span class="filter-label">媒资属性：</span>
+          <select class="filter-select"><option value="">请选择媒资属性</option></select>
+        </div>
+        <div class="filter-item">
+          <span class="filter-label">是否DRM：</span>
+          <select class="filter-select"><option value="">请选择</option></select>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button class="btn btn-primary" onclick="doSearch()">查询</button>
+        <button class="btn btn-default">重置</button>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <button class="btn-export" onclick="openExportModal()">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.5 1v7.5M3.5 6l3 3 3-3M1.5 10.5v.5a1 1 0 001 1h8a1 1 0 001-1v-.5" stroke="#1677ff" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        导出
+      </button>
+
+      <div class="toolbar-right">
+        <div class="lang-select-wrap">
+          <select class="lang-select"><option>选择本地化语言</option><option>西班牙语 (ES)</option><option>葡萄牙语 (PT)</option><option>英语 (EN)</option></select>
+        </div>
+        <button class="btn-create">创建本地化语言</button>
+        <button class="btn-batch">批量导入 &#8964;</button>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <table>
+        <colgroup>
+          <col class="col-check"><col class="col-title"><col class="col-id"><col class="col-cp"><col class="col-country"><col class="col-play"><col class="col-status"><col class="col-op">
+        </colgroup>
+        <thead>
+          <tr>
+            <th><input type="checkbox" class="check-box" id="table-select-all" onchange="toggleTableSelectAll(this)"></th>
+            <th>媒资标题</th>
+            <th>媒资ID</th>
+            <th>内容商</th>
+            <th>可用国家</th>
+            <th>播放形式</th>
+            <th>媒资状态</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="table-body">
+          <!-- Rows injected by JS -->
+        </tbody>
+      </table>
+      <div class="pagination">
+        <span class="page-info">共 128 条</span>
+        <button class="page-btn">&#8249;</button>
+        <button class="page-btn active">1</button>
+        <button class="page-btn">2</button>
+        <button class="page-btn">3</button>
+        <button class="page-btn">...</button>
+        <button class="page-btn">13</button>
+        <button class="page-btn">&#8250;</button>
+        <select style="height:26px;border:1px solid #d9dde4;border-radius:3px;font-size:12px;padding:0 4px;margin-left:6px;">
+          <option>10条/页</option><option>20条/页</option><option>50条/页</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Export Modal -->
+<div class="modal-overlay hidden" id="export-modal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">媒资信息导出</span>
+      <button class="modal-close" onclick="closeExportModal()">×</button>
+    </div>
+    <div class="modal-body">
+
+      <!-- Section: 导出选项 -->
+      <div class="sub-section">
+        <div class="section-title">导出选项</div>
+        <div class="form-row" style="margin-bottom:10px;">
+          <span class="form-label">导出选项：</span>
+          <div class="form-control">
+            <div class="tab-group">
+              <button class="tab-btn active" id="tab-excel" onclick="switchTab('excel')">按Excel媒资导出</button>
+              <button class="tab-btn" id="tab-current" onclick="switchTab('current')">按勾选条件导出</button>
+            </div>
+          </div>
+        </div>
+        <div class="form-row" style="margin-bottom:0;">
+          <span class="form-label">导出版本：</span>
+          <div class="form-control">
+            <div class="radio-group" role="radiogroup" aria-label="导出版本">
+              <div class="radio-item">
+                <input type="radio" name="export-version" id="version-zh" value="zh" checked onchange="switchVersion('zh')">
+                <label for="version-zh">中文版</label>
+              </div>
+              <div class="radio-item">
+                <input type="radio" name="export-version" id="version-en" value="en" onchange="switchVersion('en')">
+                <label for="version-en">英文版</label>
+              </div>
+            </div>
+            <div class="version-hint" id="version-hint">导出表头使用中文，共 54 个字段（对应「媒资按CP导出」）</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: 媒资ID（仅 excel 模式） -->
+      <div id="excel-section">
+        <div class="sub-section">
+          <div class="section-title">媒资ID</div>
+          <div class="form-row">
+            <span class="form-label required">媒资ID：</span>
+            <div class="form-control">
+              <div class="upload-row">
+                <button class="btn-upload" onclick="triggerUpload()">上传文件</button>
+                <button class="btn-download-tpl" onclick="downloadTemplate()">下载模版</button>
+              </div>
+              <div class="upload-hint">支持 .xlsx 格式，模板第一列为 Level、第二列为 ID，按列填写媒资层级与媒资ID</div>
+              <div class="uploaded-file hidden" id="uploaded-file">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="#3b7bff"><rect x="1" y="1" width="10" height="10" rx="2" fill="#e8f0fe" stroke="#3b7bff" stroke-width="0.8"/><path d="M4 6l2 2 3-3" stroke="#3b7bff" stroke-width="1" stroke-linecap="round"/></svg>
+                <span id="uploaded-filename">上传模版.xlsx</span>
+                <span class="uploaded-file-x" onclick="removeFile()">×</span>
+              </div>
+              <input type="file" id="file-input" style="display:none" accept=".xlsx" onchange="handleFileSelect(this)">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section: 数据来源（仅 current 模式） -->
+      <div id="current-section" style="display:none;">
+        <div class="sub-section">
+          <div class="section-title">数量</div>
+          <div class="form-row">
+            <span class="form-label">数量：</span>
+            <div class="form-control">
+              <div style="display:flex; align-items:center;">
+                <input class="count-input" type="text" id="export-count" value="100">
+              </div>
+              <div class="count-hint">列表共 128 项</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <!-- Section: 媒资信息 -->
+      <div class="sub-section">
+        <div class="section-title">媒资信息</div>
+        <div class="form-row" style="align-items:flex-start;">
+          <span class="form-label required" style="padding-top:8px;">媒资信息：</span>
+          <div class="form-control">
+            <div class="checkbox-block">
+              <div class="checkbox-all-row">
+                <input type="checkbox" id="chk-all" onchange="toggleAll(this)">
+                <label for="chk-all">全选</label>
+                <span class="field-count" id="field-count">已选 8 / 54</span>
+              </div>
+              <div class="checkbox-grid" id="field-grid" role="group" aria-label="自定义导出字段">
+                <!-- Fields injected by JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-default" onclick="closeExportModal()">取消</button>
+      <button class="btn btn-primary" onclick="doExport()">导出</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Table data
+  const tableData = [
+    { id: 'VideoID:69b13e5813ec703761fa50d3', cp: 'A2 Filmes', country: '巴西、圣巴泰勒米岛、安提瓜和巴布达...', title: 'Corazón de Campeón', play: 'URL', status: '上线' },
+    { id: 'VideoID:69b13e5813ec703761fa50d2', cp: 'A2 Filmes', country: '巴西、圣巴泰勒米岛、安提瓜和巴布达...', title: 'Slime Una Aventura Pegajosa', play: 'URL', status: '上线' },
+    { id: 'VideoID:69b13e5813ec703761fa50d1', cp: 'A2 Filmes', country: '巴西、圣巴泰勒米岛、安提瓜和巴布达...', title: 'El Poder de La Fe', play: 'URL', status: '上线' },
+    { id: 'VideoID:69b13e5713ec703761fa50d0', cp: 'A2 Filmes', country: '巴西、圣巴泰勒米岛、安提瓜和巴布达...', title: 'Espionaje en Londres', play: 'URL', status: '上线' },
+    { id: 'VideoID:69b13e5713ec703761fa50cf', cp: 'A2 Filmes', country: '巴西、圣巴泰勒米岛、安提瓜和巴布达...', title: 'Más Allá del Tiempo', play: 'URL', status: '上线' },
+    { id: 'VideoID:69b13e5713ec703761fa50ce', cp: 'A2 Filmes', country: '巴西、圣巴泰勒米岛、安提瓜和巴布达...', title: 'Un Camino de Fe', play: 'URL', status: '上线' },
+    { id: 'VideoID:69b13e5613ec703761fa50cd', cp: 'A2 Filmes', country: '巴西、圣巴泰勒米岛、安提瓜和巴布达...', title: 'Una Navidad en Montana', play: 'URL', status: '上线' },
+    { id: 'VideoID:69b13e5613ec703761fa50cc', cp: 'A2 Filmes', country: '巴西、圣巴泰勒米岛、安提瓜和巴布达...', title: 'Cerco de Terror: Ataque Al Templo', play: 'URL', status: '上线' },
+  ];
+
+  // ============================================================
+  // 导出表头字段：共 54 项，按 Excel 列顺序一一对应
+  //   [0] 中文版 ← 媒资按CP导出-20261112-163523.xlsx
+  //   [1] 英文版 ← by_cp_export-20261112-163530.xlsx
+  // 注意：中英文表头并非逐字直译（例：「入库年龄分级」对应 Classification、
+  //      「内部年龄分级」对应 Age），一律以附件列顺序对齐，不做自动翻译。
+  // ============================================================
+  const mediaFields = [
+    ['系列ID', 'Series ID'],
+    ['季ID', 'Season ID'],
+    ['媒资ID', 'Media ID'],
+    ['Bundle ID', 'Bundle ID'],
+    ['媒资层级', 'Media Level'],
+    ['媒资标题', 'Media Title'],
+    ['ResId', 'ResId'],
+    ['标识内容商唯一ID', 'Content Provider ID'],
+    ['内容商名称', 'Content Provider Name'],
+    ['合作伙伴', 'Cooperative Partner'],
+    ['三方媒资ID', 'Third-Party Asset ID'],
+    ['起播方式', 'Playback Type'],
+    ['视频地址', 'Video URL'],
+    ['带广告视频地址', 'Ad-Supported Video URL'],
+    ['SSAI广告', 'SSAI Ad-Supported Video URL'],
+    ['deeplink地址', 'Deeplink'],
+    ['分类', 'Category'],
+    ['类型', 'Genre'],
+    ['分众标签', 'Folksonomy Tag'],
+    ['标签', 'Tags'],
+    ['时长', 'Duration'],
+    ['导演', 'Director'],
+    ['演员', 'Cast'],
+    ['别名', 'Alias'],
+    ['简介', 'Description'],
+    ['横版海报', 'Horizontal Poster'],
+    ['竖版海报', 'Vertical Poster'],
+    ['正方形海报', 'Square Poster'],
+    ['横版剧照', 'Horizontal Still Image'],
+    ['上映年份', 'Release Year'],
+    ['清晰度', 'Resolution'],
+    ['语言', 'Video Language'],
+    ['生产国家', 'Production Regions'],
+    ['可用国家', 'Available Regions'],
+    ['违禁地区', 'Restricted Regions'],
+    ['入库时间', 'Content Ingestion Time'],
+    ['媒资数据更新时间', 'Metadata Update Time'],
+    ['媒资状态', 'Online Status'],
+    ['付费状态', 'Paid Status'],
+    ['IMDB评分', 'IMDB Rating'],
+    ['评分人数', 'Rating Count'],
+    ['入库方式', 'Content Ingestion Methods'],
+    ['资源方预计更新时间', 'Provider Update ETA'],
+    ['版权开始时间', 'Copyright Start Time'],
+    ['版权结束时间', 'Copyright End Time'],
+    ['媒资审核状态', 'Content Review Status'],
+    ['入库年龄分级', 'Classification'],
+    ['内部年龄分级', 'Age'],
+    ['字幕', 'Subtitles'],
+    ['集数', 'Episode Count'],
+    ['审核结果', 'Review Result'],
+    ['地区风险标签', 'Regional Risk Tag'],
+    ['标准标签打标状态', 'Standard Tag Status'],
+    ['部署状态', 'Deployment Status']
+  ];
+
+  // 当前导出版本：zh = 中文版，en = 英文版
+  let currentVersion = 'zh';
+
+  // 默认勾选字段（按列索引，沿用原型 8 项：媒资ID、媒资标题、内容商名称、
+  // 类型、语言、可用国家、媒资状态、付费状态）
+  const defaultChecked = new Set([2, 5, 8, 17, 31, 33, 37, 38]);
+
+  function renderTable() {
+    const tbody = document.getElementById('table-body');
+    tbody.innerHTML = tableData.map(row => `
+      <tr>
+        <td><input type="checkbox" class="check-box" onchange="syncExportCount()"></td>
+        <td style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${row.title}">${row.title}</td>
+        <td class="id-cell" title="${row.id}">${row.id}</td>
+        <td>${row.cp}</td>
+        <td class="country-cell" title="${row.country}">${row.country}</td>
+        <td>${row.play}</td>
+        <td><span class="status-badge"><span class="status-dot"></span>${row.status}</span></td>
+        <td><button class="link-btn">详情</button></td>
+      </tr>
+    `).join('');
+  }
+
+  function fieldLabel(pair) {
+    return currentVersion === 'zh' ? pair[0] : pair[1];
+  }
+
+  // preserveSelection=true 时按列索引保留用户勾选，仅替换表头语言
+  function renderFields(preserveSelection) {
+    const grid = document.getElementById('field-grid');
+    const prev = new Set();
+    if (preserveSelection) {
+      document.querySelectorAll('#field-grid input[type=checkbox]:checked').forEach(cb => {
+        prev.add(Number(cb.dataset.index));
+      });
+    }
+    // 英文表头较长，切换为 3 列避免文字被截断
+    grid.classList.toggle('version-en', currentVersion === 'en');
+    grid.innerHTML = mediaFields.map((pair, i) => {
+      const label = fieldLabel(pair);
+      const checked = preserveSelection ? prev.has(i) : defaultChecked.has(i);
+      return `
+      <div class="checkbox-item" title="${label}">
+        <input type="checkbox" id="field-${i}" data-index="${i}" ${checked ? 'checked' : ''} onchange="updateAllCheck()">
+        <label for="field-${i}">${label}</label>
+      </div>
+    `;
+    }).join('');
+    updateAllCheck();
+  }
+
+  // 切换导出版本：中文版 / 英文版，字段按 Excel 列顺序一一映射
+  function switchVersion(ver) {
+    if (ver === currentVersion) return;
+    currentVersion = ver;
+    document.getElementById('version-hint').textContent = ver === 'zh'
+      ? '导出表头使用中文，共 54 个字段（对应「媒资按CP导出」）'
+      : '导出表头使用英文，共 54 个字段（对应「by_cp_export」）';
+    renderFields(true);
+  }
+
+  function toggleAll(el) {
+    document.querySelectorAll('#field-grid input[type=checkbox]').forEach(cb => cb.checked = el.checked);
+    updateAllCheck();
+  }
+
+  function updateAllCheck() {
+    const all = document.querySelectorAll('#field-grid input[type=checkbox]');
+    const checked = document.querySelectorAll('#field-grid input[type=checkbox]:checked');
+    const allChk = document.getElementById('chk-all');
+    if (checked.length === 0) { allChk.checked = false; allChk.indeterminate = false; }
+    else if (checked.length === all.length) { allChk.checked = true; allChk.indeterminate = false; }
+    else { allChk.checked = false; allChk.indeterminate = true; }
+    const counter = document.getElementById('field-count');
+    if (counter) counter.textContent = '已选 ' + checked.length + ' / ' + all.length;
+  }
+
+  const totalCount = 128;
+
+  function openExportModal() {
+    document.getElementById('export-modal').classList.remove('hidden');
+    syncExportCount();
+  }
+
+  function syncExportCount() {
+    const checked = document.querySelectorAll('#table-body .check-box:checked').length;
+    const countInput = document.getElementById('export-count');
+    const countHint = document.querySelector('.count-hint');
+    if (checked > 0) {
+      countInput.value = checked;
+      countInput.disabled = true;
+      if (countHint) countHint.textContent = '已选择 ' + checked + ' 项';
+    } else {
+      countInput.value = totalCount;
+      countInput.disabled = false;
+      if (countHint) countHint.textContent = '列表共 ' + totalCount + ' 项';
+    }
+  }
+
+  function toggleTableSelectAll(el) {
+    document.querySelectorAll('#table-body .check-box').forEach(cb => cb.checked = el.checked);
+    syncExportCount();
+  }
+
+  function closeExportModal() {
+    document.getElementById('export-modal').classList.add('hidden');
+  }
+
+  function switchTab(tab) {
+    document.getElementById('tab-excel').classList.toggle('active', tab === 'excel');
+    document.getElementById('tab-current').classList.toggle('active', tab === 'current');
+    document.getElementById('excel-section').style.display = tab === 'excel' ? '' : 'none';
+    document.getElementById('current-section').style.display = tab === 'current' ? '' : 'none';
+  }
+
+  function triggerUpload() {
+    document.getElementById('file-input').click();
+  }
+
+  function handleFileSelect(input) {
+    if (input.files && input.files[0]) {
+      const name = input.files[0].name;
+      document.getElementById('uploaded-filename').textContent = name;
+      document.getElementById('uploaded-file').classList.remove('hidden');
+    }
+  }
+
+  function removeFile() {
+    document.getElementById('uploaded-file').classList.add('hidden');
+    document.getElementById('file-input').value = '';
+  }
+
+  // ============================================================
+  // 【下载模板】零依赖 XLSX 生成器
+  // xlsx 本质是 zip 包；这里用 store（不压缩）模式直接拼装 OOXML 部件，
+  // 无需 SheetJS / CDN，双击 HTML 即可离线下载。
+  // 模板内容：第一列 Level，第二列 ID。
+  // ============================================================
+  const CRC_TABLE = (function () {
+    const table = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) {
+      let c = n;
+      for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      table[n] = c >>> 0;
+    }
+    return table;
+  })();
+
+  function crc32(bytes) {
+    let crc = 0xFFFFFFFF;
+    for (let i = 0; i < bytes.length; i++) {
+      crc = CRC_TABLE[(crc ^ bytes[i]) & 0xFF] ^ (crc >>> 8);
+    }
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  function xmlEscape(value) {
+    return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function colName(n) {
+    let s = '';
+    while (n > 0) { n--; s = String.fromCharCode(65 + (n % 26)) + s; n = Math.floor(n / 26); }
+    return s;
+  }
+
+  function sheetXml(rows) {
+    const maxCol = rows.reduce((m, row) => Math.max(m, row.length), 1);
+    const body = rows.map((row, ri) => {
+      const cells = row.map((value, ci) =>
+        '<c r="' + colName(ci + 1) + (ri + 1) + '" t="inlineStr"><is><t>' +
+        xmlEscape(value) + '</t></is></c>').join('');
+      return '<row r="' + (ri + 1) + '">' + cells + '</row>';
+    }).join('');
+    return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+      + '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+      + '<dimension ref="A1:' + colName(maxCol) + rows.length + '"/>'
+      + '<sheetViews><sheetView workbookViewId="0"/></sheetViews>'
+      + '<sheetFormatPr defaultRowHeight="15"/>'
+      + '<cols><col min="1" max="1" width="16" customWidth="1"/>'
+      + '<col min="2" max="2" width="36" customWidth="1"/></cols>'
+      + '<sheetData>' + body + '</sheetData></worksheet>';
+  }
+
+  function buildXlsx(rows) {
+    const enc = new TextEncoder();
+    const parts = [
+      ['[Content_Types].xml',
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        + '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+        + '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+        + '<Default Extension="xml" ContentType="application/xml"/>'
+        + '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+        + '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+        + '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+        + '</Types>'],
+      ['_rels/.rels',
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        + '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+        + '</Relationships>'],
+      ['xl/workbook.xml',
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        + '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"'
+        + ' xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+        + '<sheets><sheet name="Sheet1" sheetId="1" r:id="rId1"/></sheets></workbook>'],
+      ['xl/_rels/workbook.xml.rels',
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        + '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+        + '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+        + '</Relationships>'],
+      ['xl/styles.xml',
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        + '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+        + '<fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>'
+        + '<fills count="2"><fill><patternFill patternType="none"/></fill>'
+        + '<fill><patternFill patternType="gray125"/></fill></fills>'
+        + '<borders count="1"><border><left/><right/><top/><bottom/><diagonal/></border></borders>'
+        + '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+        + '<cellXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/></cellXfs>'
+        + '</styleSheet>'],
+      ['xl/worksheets/sheet1.xml', sheetXml(rows)]
+    ];
+
+    const local = [], central = [];
+    const u16 = (arr, v) => arr.push(v & 0xFF, (v >>> 8) & 0xFF);
+    const u32 = (arr, v) => arr.push(v & 0xFF, (v >>> 8) & 0xFF, (v >>> 16) & 0xFF, (v >>> 24) & 0xFF);
+    let offset = 0;
+    const dosDate = 0x21, dosTime = 0; // 1980-01-01 00:00
+
+    parts.forEach(function (part) {
+      const nameBytes = enc.encode(part[0]);
+      const data = enc.encode(part[1]);
+      const crc = crc32(data);
+
+      u32(local, 0x04034B50); u16(local, 20); u16(local, 0x0800);
+      u16(local, 0); u16(local, dosTime); u16(local, dosDate);
+      u32(local, crc); u32(local, data.length); u32(local, data.length);
+      u16(local, nameBytes.length); u16(local, 0);
+      Array.prototype.push.apply(local, nameBytes);
+      Array.prototype.push.apply(local, data);
+
+      u32(central, 0x02014B50); u16(central, 20); u16(central, 20);
+      u16(central, 0x0800); u16(central, 0); u16(central, dosTime); u16(central, dosDate);
+      u32(central, crc); u32(central, data.length); u32(central, data.length);
+      u16(central, nameBytes.length); u16(central, 0); u16(central, 0);
+      u16(central, 0); u16(central, 0); u32(central, 0);
+      u32(central, offset);
+      Array.prototype.push.apply(central, nameBytes);
+
+      offset += 30 + nameBytes.length + data.length;
+    });
+
+    const localBytes = new Uint8Array(local);
+    const centralBytes = new Uint8Array(central);
+    const eocd = [];
+    u32(eocd, 0x06054B50); u16(eocd, 0); u16(eocd, 0);
+    u16(eocd, parts.length); u16(eocd, parts.length);
+    u32(eocd, centralBytes.length); u32(eocd, localBytes.length); u16(eocd, 0);
+    const eocdBytes = new Uint8Array(eocd);
+
+    const out = new Uint8Array(localBytes.length + centralBytes.length + eocdBytes.length);
+    out.set(localBytes, 0);
+    out.set(centralBytes, localBytes.length);
+    out.set(eocdBytes, localBytes.length + centralBytes.length);
+    return out;
+  }
+
+  function downloadTemplate() {
+    // 模板表头：第一列 Level，第二列 ID
+    const bytes = buildXlsx([['Level', 'ID']]);
+    const blob = new Blob([bytes], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '媒资ID上传模板.xlsx';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+  }
+
+  function doSearch() {
+    // Placeholder search action
+    const rows = document.querySelectorAll('#table-body tr');
+    rows.forEach(r => { r.style.opacity = '0.5'; });
+    setTimeout(() => rows.forEach(r => { r.style.opacity = '1'; }), 400);
+  }
+
+  function doExport() {
+    const checkedFields = [];
+    document.querySelectorAll('#field-grid input[type=checkbox]:checked').forEach(cb => {
+      const label = cb.parentElement.querySelector('label');
+      if (label) checkedFields.push(label.textContent);
+    });
+    if (checkedFields.length === 0) {
+      alert('请至少选择一个媒资信息字段');
+      return;
+    }
+    const isZh = currentVersion === 'zh';
+    alert('导出成功！\n导出版本：' + (isZh ? '中文版' : '英文版')
+      + '\n导出文件：' + (isZh ? '媒资按CP导出.xlsx' : 'by_cp_export.xlsx')
+      + '\n已选字段（' + checkedFields.length + ' / ' + mediaFields.length + '）：'
+      + checkedFields.join('、') + '\n文件正在生成，请稍候...');
+    closeExportModal();
+  }
+
+  // Close modal on overlay click
+  document.getElementById('export-modal').addEventListener('click', function(e) {
+    if (e.target === this) closeExportModal();
+  });
+
+  // Init
+  renderTable();
+  renderFields();
+</script>
+</body>
+</html>
